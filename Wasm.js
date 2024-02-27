@@ -1,10 +1,10 @@
 
 /*
 var wasm = new Wasm('Main');
-wasm.Func(true, [Valtype.i32], 'Main', [], [
+wasm.Func(true, [Valtype.i32], 'Main', [], [], [
     new WasmInstruction(Opcode.i32_const, 4), 
     new WasmInstruction(Opcode.call, 'Test')]);
-wasm.Func(true, [Valtype.i32], 'Test', [new WasmVariable(Valtype.i32, 'x')], [
+wasm.Func(true, [Valtype.i32], 'Test', [], [new WasmVariable(Valtype.i32, 'x')], [
     new WasmInstruction(Opcode.get_local, 'x'),
     new WasmInstruction(Opcode.get_local, 'x'),
     new WasmInstruction(Opcode.i32_mul)
@@ -86,8 +86,8 @@ class Wasm{
         this.main = main;
     }
 
-    Func(_export, returnType, name, parameters, instructions){
-        this.functions.push({export:_export, returnType, name, parameters, instructions});
+    Func(_export, returnType, name, parameters, locals, instructions){
+        this.functions.push({export:_export, returnType, name, parameters, locals, instructions});
     }
 
     ImportFunc(returnType, name, parameters, code){
@@ -257,6 +257,20 @@ class Wasm{
             function EmitCodeSection(){
         
                 function EmitFunctionWasm(f){
+                    var localID = 0;
+                    var i32LocalCount = 0;
+                    for(var p of f.parameters){
+                        p.id = localID;
+                        localID++;
+                    }
+                    for(var l of f.locals){
+                        if(l.valtype == Valtype.i32){
+                            l.id = localID;
+                            localID++;
+                            i32LocalCount++;
+                        }
+                    }
+
                     function FindFunction(name){
                         for(var f of wasmTree.importFunctions){
                             if(f.name == name){
@@ -277,6 +291,11 @@ class Wasm{
                                 return p;
                             }
                         }
+                        for(var l of f.locals){
+                            if(l.name == name){
+                                return l;
+                            }
+                        }
                         throw "Cant find local with name: "+name;
                     }
         
@@ -291,12 +310,15 @@ class Wasm{
                         else if(i.opcode == Opcode.get_local){
                             wasmCode.push(Opcode.get_local, ...unsignedLEB128(FindLocal(i.value).id));
                         }
+                        else if(i.opcode == Opcode.set_local){
+                            wasmCode.push(Opcode.set_local, ...unsignedLEB128(FindLocal(i.value).id));
+                        }
                         else{
                             wasmCode.push(i.opcode);
                         }
                     }
                     wasmCode.push(Opcode.end);
-                    return encodeVector([0, ...wasmCode]);
+                    return encodeVector([1, ...encodeLocal(i32LocalCount, Valtype.i32), ...wasmCode]);
                 }
         
                 return createSection(Section.code, encodeVector(wasmTree.functions.map(f=>EmitFunctionWasm(f))));
