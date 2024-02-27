@@ -36,6 +36,11 @@ class JForth{
             }
         }
 
+        function CalcParameter(p){
+            var tokens = Tokenize(p);
+            return new WasmVariable(GetValtype(tokens[0].value), tokens[1].value);
+        }
+
         function ParseFunction(wasm, functions, f){
             function EmitFunction(){
                 var wasmInstructions = [];
@@ -61,11 +66,6 @@ class JForth{
                 }
                 var _export = f.funcType == 'export' || f.funcType == 'entry';
                 wasm.Func(_export, GetReturnValtype(f.returnType), f.name, parameters, locals, wasmInstructions);
-            }
-
-            function CalcParameter(p){
-                var tokens = Tokenize(p);
-                return new WasmVariable(GetValtype(tokens[0].value), tokens[1].value);
             }
 
             var tokens = Tokenize(f.code);
@@ -111,7 +111,7 @@ class JForth{
 
         for(var f of this.functions){
             if(f.funcType == 'import'){
-                wasm.ImportFunc(GetReturnValtype(f.returnType), f.name, [], f.code);
+                wasm.ImportFunc(GetReturnValtype(f.returnType), f.name, f.parameters.map(p=>CalcParameter(p)), f.code);
             }
             else{
                 ParseFunction(wasm, this.functions, f);
