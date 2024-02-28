@@ -218,11 +218,30 @@ class Wasm{
             ];
             
             function EmitTypeSection(){
+                function GetValtype(type){
+                    if(type == 'int'){
+                        return Valtype.i32;
+                    }
+                    else if(type == 'float'){
+                        return Valtype.f32;
+                    }
+                    throw "Unexpected type: "+type;
+                }
+        
+                function GetReturnValtype(type){
+                    if(type == 'void'){
+                        return [];
+                    }
+                    else{
+                        return [GetValtype(type)];
+                    }
+                }
+
                 function EmitTypes(functions){
                     return functions.map(f=>[
                         functionType,
-                        ...encodeVector(f.parameters.map(p=>p.valtype)),
-                        ...encodeVector(f.returnType),
+                        ...encodeVector(f.parameters.map(p=>GetValtype(p.valtype))),
+                        ...encodeVector(GetReturnValtype(f.returnType)),
                     ]);
                 }
                 return createSection(Section.type, encodeVector([...EmitTypes(wasmTree.importFunctions), ...EmitTypes(wasmTree.functions)]));
@@ -255,6 +274,15 @@ class Wasm{
             }
             
             function EmitCodeSection(){
+                function GetBlocktype(type){
+                    if(type == 'void'){
+                        return Blocktype.void;
+                    }
+                    else if(type == 'int'){
+                        return Blocktype.i32;
+                    }
+                    throw "Unexpected type: "+type;
+                }
         
                 function EmitFunctionWasm(f){
                     var localID = 0;
@@ -264,7 +292,7 @@ class Wasm{
                         localID++;
                     }
                     for(var l of f.locals){
-                        if(l.valtype == Valtype.i32){
+                        if(l.valtype == 'int'){
                             l.id = localID;
                             localID++;
                             i32LocalCount++;
@@ -301,20 +329,30 @@ class Wasm{
         
                     var wasmCode = [];
                     for(var i of f.instructions){
-                        if(i.opcode == Opcode.i32_const){
+                        if(i.opcode == 'i32_const'){
                             wasmCode.push(Opcode.i32_const, ...signedLEB128(i.value));
                         }
-                        else if(i.opcode == Opcode.call){
+                        else if(i.opcode == 'call'){
                             wasmCode.push(Opcode.call, ...unsignedLEB128(FindFunction(i.value).id));
                         }
-                        else if(i.opcode == Opcode.get_local){
+                        else if(i.opcode == 'get_local'){
                             wasmCode.push(Opcode.get_local, ...unsignedLEB128(FindLocal(i.value).id));
                         }
-                        else if(i.opcode == Opcode.set_local){
+                        else if(i.opcode == 'set_local'){
                             wasmCode.push(Opcode.set_local, ...unsignedLEB128(FindLocal(i.value).id));
                         }
+                        else if(i.opcode == 'loop'){
+                            wasmCode.push(Opcode.loop, GetBlocktype(i.value));
+                        }
+                        else if(i.opcode == 'br_if'){
+                            wasmCode.push(Opcode.br_if, ...unsignedLEB128(i.value));
+                        }
                         else{
-                            wasmCode.push(i.opcode);
+                            var opcodeValue = Opcode[i.opcode];
+                            if(opcodeValue == undefined){
+                                throw 'Cant find '+i.opcode;
+                            }
+                            wasmCode.push(opcodeValue);
                         }
                     }
                     wasmCode.push(Opcode.end);
@@ -360,7 +398,7 @@ class Wasm{
                     for(var f of wasmTree.functions.filter(f=>f.export)){
                         exports[f.name] = obj.instance.exports[f.name];
                     }
-                    console.log(exports[wasmTree.main]());
+                    exports[wasmTree.main]();
                 }
             );
         }

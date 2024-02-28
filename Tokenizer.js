@@ -5,7 +5,7 @@ function Tokenize(code){
     }
 
     var tokens = [];
-    var punctuation1 = ['+','-','*','/'];
+    var punctuation1 = ['+','-','*','/','<','>'];
     var punctuation2 = ['=='];
     var whitespace = [' ', '\t', '\r', '\n'];
 

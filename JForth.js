@@ -1,10 +1,3 @@
-const JForthOpcode = {
-    I32Const:0,
-    I32Add:1,
-    SetLocal:3,
-    GetLocal:4,
-    Call:5,
-};
 
 class JForth{
     constructor(main){
@@ -17,90 +10,60 @@ class JForth{
     }
 
     Emit(){
-        function GetValtype(type){
-            if(type == 'int'){
-                return Valtype.i32;
-            }
-            else if(type == 'float'){
-                return Valtype.f32;
-            }
-            throw "Unexpected type: "+type;
-        }
-
-        function GetReturnValtype(type){
-            if(type == 'void'){
-                return [];
-            }
-            else{
-                return [GetValtype(type)];
-            }
-        }
-
         function CalcParameter(p){
             var tokens = Tokenize(p);
-            return new WasmVariable(GetValtype(tokens[0].value), tokens[1].value);
+            return new WasmVariable(tokens[0].value, tokens[1].value);
         }
 
         function ParseFunction(wasm, functions, f){
-            function EmitFunction(){
-                var wasmInstructions = [];
-                for(var i of jforthInstructions){
-                    if(i.opcode == JForthOpcode.I32Const){
-                        wasmInstructions.push(new WasmInstruction(Opcode.i32_const, parseFloat(i.value)));
-                    }
-                    else if(i.opcode == JForthOpcode.I32Add){
-                        wasmInstructions.push(new WasmInstruction(Opcode.i32_add));
-                    }
-                    else if(i.opcode == JForthOpcode.SetLocal){
-                        wasmInstructions.push(new WasmInstruction(Opcode.set_local, i.value));
-                    }
-                    else if(i.opcode == JForthOpcode.GetLocal){
-                        wasmInstructions.push(new WasmInstruction(Opcode.get_local, i.value));
-                    }
-                    else if(i.opcode == JForthOpcode.Call){
-                        wasmInstructions.push(new WasmInstruction(Opcode.call, i.value));
-                    }
-                    else{
-                        throw "Unexpected opcode "+i.opcode;
-                    }
-                }
-                var _export = f.funcType == 'export' || f.funcType == 'entry';
-                wasm.Func(_export, GetReturnValtype(f.returnType), f.name, parameters, locals, wasmInstructions);
-            }
-
             var tokens = Tokenize(f.code);
-            var jforthInstructions = [];
+            var instructions = [];
             var parameters = f.parameters.map(p=>CalcParameter(p));
             var locals = [];
             for(var i=0;i<tokens.length;i++){
                 if(tokens[i].value == '+'){
-                    jforthInstructions.push({opcode:JForthOpcode.I32Add});
+                    instructions.push({opcode:'i32_add'});
                 }
                 else if(tokens[i].value == 'set'){
                     var localName = tokens[i+1].value;
                     if(!locals.find(l=>l.name == localName)){
-                        locals.push(new WasmVariable(Valtype.i32, localName));
+                        locals.push(new WasmVariable('int', localName));
                     }
-                    jforthInstructions.push({opcode:JForthOpcode.SetLocal, value:localName});
+                    instructions.push({opcode:'set_local', value:localName});
                     i++;
                 }
+                else if(tokens[i].value == 'loop'){
+                    instructions.push({opcode:'loop', value:tokens[i+1].value});
+                    i++;
+                }
+                else if(tokens[i].value == 'end'){
+                    instructions.push({opcode:'end'});
+                }
+                else if(tokens[i].value == 'br_if'){
+                    instructions.push({opcode:'br_if', value:parseFloat(tokens[i+1].value)});
+                    i++;
+                }
+                else if(tokens[i].value == '<'){
+                    instructions.push({opcode:'i32_lt'});
+                }
                 else if(tokens[i].type == 'Number'){
-                    jforthInstructions.push({opcode:JForthOpcode.I32Const, value:tokens[i].value});
+                    instructions.push({opcode:'i32_const', value:parseFloat(tokens[i].value)});
                 }
                 else if(tokens[i].type == 'Varname'){
                     var varname = tokens[i].value;
                     if(locals.find(l=>l.name == varname) || parameters.find(p=>p.name == varname)){
-                        jforthInstructions.push({opcode:JForthOpcode.GetLocal, value:varname});
+                        instructions.push({opcode:'get_local', value:varname});
                     }
                     else if(functions.find(f=>f.name == varname)){
-                        jforthInstructions.push({opcode:JForthOpcode.Call, value:varname});
+                        instructions.push({opcode:'call', value:varname});
                     }
                     else{
                         throw "no locals, parameters or functions with name: "+varname;
                     }
                 }
             }
-            EmitFunction();
+            var _export = f.funcType == 'export' || f.funcType == 'entry';
+            wasm.Func(_export, f.returnType, f.name, parameters, locals, instructions);
         }
 
         var entry = this.functions.find(f=>f.funcType == 'entry');
@@ -111,7 +74,7 @@ class JForth{
 
         for(var f of this.functions){
             if(f.funcType == 'import'){
-                wasm.ImportFunc(GetReturnValtype(f.returnType), f.name, f.parameters.map(p=>CalcParameter(p)), f.code);
+                wasm.ImportFunc(f.returnType, f.name, f.parameters.map(p=>CalcParameter(p)), f.code);
             }
             else{
                 ParseFunction(wasm, this.functions, f);
