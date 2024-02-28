@@ -59,7 +59,7 @@ function Wasm(allFunctions){
         f32_load: 0x2a,
         f32_store: 0x38,
         i32_mul: 0x6c,
-        i32_div: 0x6d,
+        i32_div_s: 0x6d,
         i32_add: 0x6a,
         i32_sub: 0x6b,
         i32_lt: 0x48,

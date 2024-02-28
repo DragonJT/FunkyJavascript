@@ -1,22 +1,12 @@
 
-var wasm = Forth([
-    ForthFunc('import', 'void', 'Print', ['int i'], 'console.log(i);'),
-    ForthFunc('entry', 'void', 'Main', [], `
-        1 set x
-        loop
-            1 x + set x
-            x Print
-            x 6 < if
-                br 1
-            end
-        end
-        0 set y
-        loop
-            y Print
-            2 y + set y
-            y 10 < br_if 0
-        end
-    `)
+var forth = C([
+    ImportFunc('void', 'Print', ['int i'], 'console.log(i);'),
+    CFunc('entry', 'void', 'Main', [], [
+        CVar('x', '5 * 2'),
+        CVar('y', '2 + 3'),
+        CCall('Print', ['x - y']),
+        CCall('Print', ['x * y']),
+    ]),
 ]);
-
+var wasm = Forth(forth);
 Wasm(wasm);

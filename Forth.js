@@ -36,6 +36,15 @@ function Forth(functions){
             if(tokens[i].value == '+'){
                 instructions.push({opcode:'i32_add'});
             }
+            else if(tokens[i].value == '-'){
+                instructions.push({opcode:'i32_sub'});
+            }
+            else if(tokens[i].value == '*'){
+                instructions.push({opcode:'i32_mul'});
+            }
+            else if(tokens[i].value == '/'){
+                instructions.push({opcode:'i32_div_s'});
+            }
             else if(tokens[i].value == 'set'){
                 var name = tokens[i+1].value;
                 if(!locals.find(l=>l.name == name)){
@@ -78,6 +87,9 @@ function Forth(functions){
                 else{
                     throw "no locals, parameters or functions with name: "+varname;
                 }
+            }
+            else{
+                throw "Forth: Unexpected token type: "+tokens[i].value;
             }
         }
         return WasmFunc(f.type, f.returnType, f.name, f.parameters, locals.map(l=>l.type+' '+l.name), instructions)
