@@ -347,6 +347,12 @@ class Wasm{
                         else if(i.opcode == 'br_if'){
                             wasmCode.push(Opcode.br_if, ...unsignedLEB128(i.value));
                         }
+                        else if(i.opcode == 'if'){
+                            wasmCode.push(Opcode.if, GetBlocktype(i.value));
+                        }
+                        else if(i.opcode == 'br'){
+                            wasmCode.push(Opcode.br, ...unsignedLEB128(i.value));
+                        }
                         else{
                             var opcodeValue = Opcode[i.opcode];
                             if(opcodeValue == undefined){

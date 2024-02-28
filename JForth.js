@@ -33,8 +33,7 @@ class JForth{
                     i++;
                 }
                 else if(tokens[i].value == 'loop'){
-                    instructions.push({opcode:'loop', value:tokens[i+1].value});
-                    i++;
+                    instructions.push({opcode:'loop', value:'void'});
                 }
                 else if(tokens[i].value == 'end'){
                     instructions.push({opcode:'end'});
@@ -42,6 +41,13 @@ class JForth{
                 else if(tokens[i].value == 'br_if'){
                     instructions.push({opcode:'br_if', value:parseFloat(tokens[i+1].value)});
                     i++;
+                }
+                else if(tokens[i].value == 'br'){
+                    instructions.push({opcode:'br', value:parseFloat(tokens[i+1].value)});
+                    i++;
+                }
+                else if(tokens[i].value == 'if'){
+                    instructions.push({opcode:'if', value:'void'});
                 }
                 else if(tokens[i].value == '<'){
                     instructions.push({opcode:'i32_lt'});
