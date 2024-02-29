@@ -19,32 +19,30 @@ function Tokenize(code){
     function Number(){
         var start = index;
         index++;
-        for(var i=0;i<1000;i++){
+        while(true){
             if(!(IsDigit(code[index]) || code[index]=='.')){
                 return Token('Number', start, index);
             }
             index++;
         }
-        console.log('number');
     }
 
     function Varname(){
         var start = index;
         index++;
-        for(var i=0;i<1000;i++){
+        while(true){
             if(!(IsCharacter(code[index]) || IsDigit(code[index]))){
                 return Token('Varname', start, index);
             }
             index++;
         }
-        console.log('varname');
     }
 
     function Between(type, open, close){
         index++;
         var start = index;
         var depth = 0;
-        for(var i=0;i<1000;i++){
+        while(true){
             if(code[index] == open){
                 depth++;
             }
@@ -57,13 +55,13 @@ function Tokenize(code){
                 }
             }
             else if(code[index] == '\0'){
-                throw "Error unexpected end of file";
+                throw "Error unexpected end of file"+code;
             }
             index++;
         }
-        console.log('between');
     }
 
+    const punctuation2 = ['=='];
     var tokens = [];
     code = code+'\0';
     var index = 0;
@@ -87,8 +85,14 @@ function Tokenize(code){
             tokens.push(Between('Parenthesis', '(', ')'));
         }
         else{
-            tokens.push(Token('Punctuation', index, index+1));
-            index++;
+            if(punctuation2.includes(code.substring(index, index+2))){
+                tokens.push(Token('Punctuation', index, index+2));
+                index+=2;
+            }
+            else{
+                tokens.push(Token('Punctuation', index, index+1));
+                index++;
+            }
         }
     }
 }

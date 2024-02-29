@@ -51,6 +51,9 @@ function Forth(functions){
             else if(tokens[i].value == '>'){
                 instructions.push({opcode:'i32_gt'});
             }
+            else if(tokens[i].value == '=='){
+                instructions.push({opcode:'i32_eq'});
+            }
             else if(tokens[i].value == 'store'){
                 instructions.push({opcode:'i32_store'});
             }
