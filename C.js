@@ -100,7 +100,7 @@ function C(root){
                         }
                     }
                 }
-                var operatorGroups = [['+', '-'], ['*', '/'], ['*', '/']];
+                var operatorGroups = [['<', '>'], ['+', '-'], ['*', '/']];
                 for(var operators of operatorGroups){
                     var output = TrySplit(operators);
                     if(output){
