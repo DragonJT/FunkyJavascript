@@ -112,8 +112,11 @@ function Forth(functions){
         if(f.type == 'import'){
             wasm.push(f);
         }
-        else{
+        else if(f.type == 'export' || f.type == 'func' || f.type == 'entry'){
             wasm.push(ParseFunction(f));
+        }
+        else{
+            throw "Unexpected function type: "+JSON.stringify(f);
         }
     }
     return wasm;

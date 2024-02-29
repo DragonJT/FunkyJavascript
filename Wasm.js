@@ -102,8 +102,11 @@ function Wasm(allFunctions){
             f.export = true;
             functions.push(f);
         }
-        else{
+        else if(f.type == 'func'){
             functions.push(f);
+        }
+        else{
+            throw 'Unexpected function type: '+JSON.stringify(f);
         }
     }
 

@@ -1,9 +1,5 @@
-function CGlobal(name, size=1){
-    return {type:'global', name, size};
-}
-
-function CExpr(expression){
-    return {type:'expr', expression};
+function CGlobal(name, count=1){
+    return {type:'global', name, count};
 }
 
 function CFunc(type, returnType, name, parameters, body){
@@ -38,6 +34,10 @@ function CFor(varname, end, body){
     return {type:'for', varname, end, body};
 }
 
+function CConst(name, value){
+    return {type:'const', name, value};
+}
+
 function C(root){
     
     function EmitFunction(f){
@@ -54,6 +54,10 @@ function C(root){
             var global = globals.find(g=>g.name == name);
             if(global){
                 return {global};
+            }
+            var _const = consts.find(c=>c.name == name);
+            if(_const){
+                return {const:_const}
             }
             throw "C: Cant find variable with name: "+name;
         }
@@ -100,7 +104,15 @@ function C(root){
                         if(variable.global){
                             return variable.global.memoryLocation+' load ';
                         }
-                        return t.value+' ';
+                        else if(variable.local){
+                            return t.value+' ';
+                        }
+                        else if(variable.const){
+                            return variable.const.value+' ';
+                        }
+                        else{
+                            throw "Expecting global, local, or const: "+JSON.stringify(variable);
+                        }
                     }
                     else if(t.type == 'Number'){
                         return t.value+' ';
@@ -140,8 +152,8 @@ function C(root){
         function EmitBody(body){
             var forthCode = '';
             for(var statement of body){
-                if(statement.type == 'expr'){
-                    forthCode+=EmitExpression(statement.expression);
+                if(typeof statement == 'string'){
+                    forthCode+=EmitExpression(statement);
                 }
                 else if(statement.type == 'var'){
                     if(GetLocal(statement.name)){
@@ -163,7 +175,7 @@ function C(root){
                         forthCode+='set '+statement.name+' ';
                     }
                     else{
-                        throw "No global or local";
+                        throw "No global or local: "+JSON.stringify(variable);
                     }
                 }
                 else if(statement.type == 'assign_array'){
@@ -174,7 +186,7 @@ function C(root){
                         forthCode+='store ';
                     }
                     else{
-                        throw "Assign array. Expecting global";
+                        throw "Assign array. Expecting global: "+JSON.stringify(variable);;
                     }
                 }
                 else if(statement.type == 'if'){
@@ -213,20 +225,53 @@ function C(root){
         return ForthFunc(f.type, f.returnType, f.name, f.parameters, forthCode);
     }
 
-    var globals = [];
     var forth = [];
     var memoryLocation = 0;
+
+    var consts = [];
+    var globals = [];
+
+    for(var i of root){
+        if(i.type == 'const'){
+            consts.push(i);
+        }
+    }
+
+    function CalcGlobalCount(count){
+        var tokens = Tokenize(count);
+        if(tokens.length == 1){
+            if(tokens[0].type == 'Varname'){
+                var c = consts.find(c=>c.name == tokens[0].value);
+                if(c==undefined){
+                    throw 'Unable to find const: '+tokens[0].value;
+                }
+                return parseFloat(c.value);
+            }
+            else if(tokens[0].type == 'Number'){
+                return parseFloat(tokens[0].value);
+            }
+        }
+        throw 'Cannot calculate global count: '+JSON.stringify(tokens);
+    }
+
+    for(var i of root){
+        if(i.type == 'global'){
+            i.memoryLocation = memoryLocation;
+            globals.push(i);
+            memoryLocation+=CalcGlobalCount(i.count)*4;
+        }
+    }
+
     for(var i of root){
         if(i.type == 'import'){
             forth.push(i);
         }
-        else if(i.type == 'global'){
-            i.memoryLocation = memoryLocation;
-            globals.push(i);
-            memoryLocation+=i.size*4;
-        }
-        else{
+        else if(i.type == 'entry' || i.type == 'func' || i.type == 'export'){
             forth.push(EmitFunction(i));
+        }
+        else if(i.type == 'global' || i.type == 'const'){}
+        else{
+            throw 'Unexpected type: '+JSON.stringify(i);
         }
     }
     return forth;
