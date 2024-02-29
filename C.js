@@ -30,6 +30,10 @@ function CAssign(name, value){
     return {type:'assign', name, value};
 }
 
+function CAssignArray(name, element, value){
+    return {type:'assign_array', name, element, value};
+}
+
 function CFor(varname, end, body){
     return {type:'for', varname, end, body};
 }
@@ -55,23 +59,57 @@ function C(root){
         }
 
         function EmitExpression(expression){
-            var shuntingYardOutput = ShuntingYard(expression);
-            var output = '';
-            for(var t of shuntingYardOutput){
-                if(t.type == 'Varname'){
-                    var variable = GetVariable(t.value);
-                    if(variable.global){
-                        output+= variable.global.memoryLocation+' load ';
+            function EmitExpressionWithTokens(tokens){
+                function TrySplit(operators){
+                    for(var i=tokens.length-1;i>=0;i--){
+                        var t = tokens[i];
+                        if(t.type == 'Punctuation' && operators.includes(t.value)){
+                            var left = EmitExpressionWithTokens(tokens.slice(0, i));
+                            var right = EmitExpressionWithTokens(tokens.slice(i+1));
+                            return left+right+t.value+' ';
+                        }
+                    }
+                    return undefined;
+                }
+                if(tokens.length == 1){
+                    var t = tokens[0];
+                    if(t.type == 'Varname'){
+                        var variable = GetVariable(t.value);
+                        if(variable.global){
+                            return variable.global.memoryLocation+' load ';
+                        }
+                        return t.value+' ';
+                    }
+                    else if(t.type == 'Number'){
+                        return t.value+' ';
                     }
                     else{
-                        output += t.value+' ';
+                        throw "Unexpected remaining token: "+JSON.stringify(t);
                     }
                 }
-                else{
-                    output+= t.value+' ';
+                else if(tokens.length == 2){
+                    var t1 = tokens[0];
+                    var t2 = tokens[1];
+                    if(t1.type == 'Varname' && t2.type == 'Square'){
+                        var variable = GetVariable(t1.value);
+                        if(variable.global){
+                            return variable.global.memoryLocation+' 4 '+EmitExpression(t2.value)+'* + load ';
+                        }
+                        else{
+                            throw "Expecting [] on globals only";
+                        }
+                    }
                 }
+                var operatorGroups = [['+', '-'], ['*', '/'], ['*', '/']];
+                for(var operators of operatorGroups){
+                    var output = TrySplit(operators);
+                    if(output){
+                        return output;
+                    }
+                }
+                throw "Unexpected expression:"+JSON.stringify(tokens);
             }
-            return output;
+            return EmitExpressionWithTokens(Tokenize(expression));
         }
 
         function EmitBody(body){
@@ -104,6 +142,17 @@ function C(root){
                     }
                     else{
                         throw "No global or local";
+                    }
+                }
+                else if(statement.type == 'assign_array'){
+                    var variable = GetVariable(statement.name);
+                    if(variable.global){
+                        forthCode+=variable.global.memoryLocation+' 4 '+EmitExpression(statement.element)+'* + ';
+                        forthCode+=EmitExpression(statement.value);
+                        forthCode+='store ';
+                    }
+                    else{
+                        throw "Assign array. Expecting global";
                     }
                 }
                 else if(statement.type == 'if'){
