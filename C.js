@@ -2,8 +2,8 @@ function CGlobal(name, size=1){
     return {type:'global', name, size};
 }
 
-function CCall(name, args){
-    return {type:'call', name, args};
+function CExpr(expression){
+    return {type:'expr', expression};
 }
 
 function CFunc(type, returnType, name, parameters, body){
@@ -59,6 +59,28 @@ function C(root){
         }
 
         function EmitExpression(expression){
+
+            function EmitArgs(args){
+                var tokens = Tokenize(args);
+                var start = 0;
+                var argExpressions = [];
+                for(var i=0;i<tokens.length;i++){
+                    if(tokens[i].type == 'Punctuation' && tokens[i].value == ','){
+                        argExpressions.push(tokens.slice(start, i));
+                        start=i+1;
+                    }
+                }
+                var endArg = tokens.slice(start);
+                if(endArg.length>0){
+                    argExpressions.push(endArg);
+                }
+                var output = '';
+                for(var a of argExpressions){
+                    output+=EmitExpressionWithTokens(a);
+                }
+                return output;
+            }
+
             function EmitExpressionWithTokens(tokens){
                 function TrySplit(operators){
                     for(var i=tokens.length-1;i>=0;i--){
@@ -90,6 +112,9 @@ function C(root){
                 else if(tokens.length == 2){
                     var t1 = tokens[0];
                     var t2 = tokens[1];
+                    if(t1.type == 'Varname' && t2.type == 'Parenthesis'){
+                        return EmitArgs(t2.value) + t1.value+' ';
+                    }
                     if(t1.type == 'Varname' && t2.type == 'Square'){
                         var variable = GetVariable(t1.value);
                         if(variable.global){
@@ -115,11 +140,8 @@ function C(root){
         function EmitBody(body){
             var forthCode = '';
             for(var statement of body){
-                if(statement.type == 'call'){
-                    for(var arg of statement.args){
-                        forthCode+=EmitExpression(arg);
-                    }
-                    forthCode+=statement.name+' ';
+                if(statement.type == 'expr'){
+                    forthCode+=EmitExpression(statement.expression);
                 }
                 else if(statement.type == 'var'){
                     if(GetLocal(statement.name)){
@@ -181,7 +203,7 @@ function C(root){
                     forthCode+='br '+statement.depth+' ';
                 }
                 else{
-                    throw "Unexpected statement: "+statement;
+                    throw "Unexpected statement: "+JSON.stringify(statement);
                 }
             }
             return forthCode;

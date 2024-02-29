@@ -83,6 +83,9 @@ function Tokenize(code){
         else if(code[index] == '['){
             tokens.push(Between('Square', '[', ']'));
         }
+        else if(code[index] == '('){
+            tokens.push(Between('Parenthesis', '(', ')'));
+        }
         else{
             tokens.push(Token('Punctuation', index, index+1));
             index++;
