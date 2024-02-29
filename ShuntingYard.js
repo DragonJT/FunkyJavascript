@@ -2,10 +2,12 @@
 function ShuntingYard(expression){
     var tokens = Tokenize(expression);
     const symbols = {
-        '+':{type:'Operator', associativity:'Left', precedence:0},
-        '-':{type:'Operator', associativity:'Left', precedence:0},
-        '*':{type:'Operator', associativity:'Left', precedence:1},
-        '/':{type:'Operator', associativity:'Left', precedence:1},
+        '+':{type:'Operator', associativity:'Left', precedence:4},
+        '-':{type:'Operator', associativity:'Left', precedence:4},
+        '*':{type:'Operator', associativity:'Left', precedence:6},
+        '/':{type:'Operator', associativity:'Left', precedence:6},
+        '<':{type:'Operator', associativity:'Left', precedence:3},
+        '>':{type:'Operator', associativity:'Left', precedence:3},
     };
 
     var output = '';

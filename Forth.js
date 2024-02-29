@@ -29,7 +29,7 @@ function Forth(functions){
 
     function ParseFunction(f){
         var tokens = Tokenize(f.code);
-        var parameters = f.parameters.filter(p=>ParseVariable(p));
+        var parameters = f.parameters.map(p=>ParseVariable(p));
         var instructions = [];
         var locals = [];
         for(var i=0;i<tokens.length;i++){
@@ -45,6 +45,12 @@ function Forth(functions){
             else if(tokens[i].value == '/'){
                 instructions.push({opcode:'i32_div_s'});
             }
+            else if(tokens[i].value == '<'){
+                instructions.push({opcode:'i32_lt'});
+            }
+            else if(tokens[i].value == '>'){
+                instructions.push({opcode:'i32_gt'});
+            }
             else if(tokens[i].value == 'set'){
                 var name = tokens[i+1].value;
                 if(!locals.find(l=>l.name == name)){
@@ -52,6 +58,9 @@ function Forth(functions){
                 }
                 instructions.push({opcode:'set_local', value:name});
                 i++;
+            }
+            else if(tokens[i].value == 'block'){
+                instructions.push({opcode:'block', value:'void'});
             }
             else if(tokens[i].value == 'loop'){
                 instructions.push({opcode:'loop', value:'void'});
@@ -69,9 +78,6 @@ function Forth(functions){
             }
             else if(tokens[i].value == 'if'){
                 instructions.push({opcode:'if', value:'void'});
-            }
-            else if(tokens[i].value == '<'){
-                instructions.push({opcode:'i32_lt'});
             }
             else if(tokens[i].type == 'Number'){
                 instructions.push({opcode:'i32_const', value:parseFloat(tokens[i].value)});

@@ -329,7 +329,7 @@ function Wasm(allFunctions){
             }
 
             function FindLocal(name){
-                for(var p of f.parameters){
+                for(var p of f.parametersObjs){
                     if(p.name == name){
                         return p;
                     }
@@ -358,6 +358,9 @@ function Wasm(allFunctions){
                 }
                 else if(i.opcode == 'loop'){
                     wasmCode.push(Opcode.loop, GetBlocktype(i.value));
+                }
+                else if(i.opcode == 'block'){
+                    wasmCode.push(Opcode.block, GetBlocktype(i.value));
                 }
                 else if(i.opcode == 'br_if'){
                     wasmCode.push(Opcode.br_if, ...unsignedLEB128(i.value));
