@@ -10,12 +10,12 @@ function ShuntingYard(expression){
         '>':{type:'Operator', associativity:'Left', precedence:3},
     };
 
-    var output = '';
+    var output = [];
     var stack = [];
     var expectingOperand = true;
     for(var i=0;i<tokens.length;i++){
-        var value = tokens[i].value;
-        var symbol = symbols[value];
+        var token = tokens[i];
+        var symbol = symbols[token.value];
         if(symbol){
             if(symbol.type == 'Operator'){
                 if(expectingOperand){
@@ -32,9 +32,9 @@ function ShuntingYard(expression){
                     if(top.type != 'Operator' || !(a || b)){
                         break;
                     }
-                    output += stack.pop().value+' ';
+                    output.push(stack.pop().token);
                 }
-                symbol.value = value;
+                symbol.token = token;
                 stack.push(symbol);
             }
             else{
@@ -46,11 +46,11 @@ function ShuntingYard(expression){
                 throw "Expecting operator. Got operand. "+value;
             }
             expectingOperand = false;
-            output+=value+' ';
+            output.push(token);
         }
     }
     while(stack.length>0){
-        output+=stack.pop().value+' ';
+        output.push(stack.pop().token);
     }
     return output;
 }

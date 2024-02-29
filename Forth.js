@@ -51,6 +51,12 @@ function Forth(functions){
             else if(tokens[i].value == '>'){
                 instructions.push({opcode:'i32_gt'});
             }
+            else if(tokens[i].value == 'store'){
+                instructions.push({opcode:'i32_store'});
+            }
+            else if(tokens[i].value == 'load'){
+                instructions.push({opcode:'i32_load'});
+            }
             else if(tokens[i].value == 'set'){
                 var name = tokens[i+1].value;
                 if(!locals.find(l=>l.name == name)){
