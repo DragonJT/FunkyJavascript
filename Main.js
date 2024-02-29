@@ -24,6 +24,7 @@ var forth = C([
             CAssignArray('rockY', 'i', 'rockY[i] + 1'),
             CIf('rockY[i]>500', [
                 CAssignArray('rockY', 'i', '0'),
+                CAssignArray('rockX', 'i', 'Random(0, 600)'),
             ])
         ]),
         CExpr('RequestAnimationFrame()'),
