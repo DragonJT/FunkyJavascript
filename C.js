@@ -1,5 +1,5 @@
-function CGlobal(name, count=1){
-    return {type:'global', name, count};
+function CGlobal(_type, name, count=1){
+    return {type:'global', _type, name, count};
 }
 
 function CFunc(type, returnType, name, parameters, body){
@@ -39,7 +39,6 @@ function CConst(name, value){
 }
 
 function C(root){
-    
     function EmitFunction(f){
 
         function GetLocal(name){
@@ -101,8 +100,9 @@ function C(root){
                     var t = tokens[0];
                     if(t.type == 'Varname'){
                         var variable = GetVariable(t.value);
-                        if(variable.global){
-                            return variable.global.memoryLocation+' load ';
+                        var g = variable.global;
+                        if(g){
+                            return g.memoryLocation+' '+g._type+'_load ';
                         }
                         else if(variable.local){
                             return t.value+' ';
@@ -114,7 +114,7 @@ function C(root){
                             throw "Expecting global, local, or const: "+JSON.stringify(variable);
                         }
                     }
-                    else if(t.type == 'Number'){
+                    else if(t.type == 'Float' || t.type == 'Int'){
                         return t.value+' ';
                     }
                     else{
@@ -129,8 +129,9 @@ function C(root){
                     }
                     if(t1.type == 'Varname' && t2.type == 'Square'){
                         var variable = GetVariable(t1.value);
-                        if(variable.global){
-                            return variable.global.memoryLocation+' 4 '+EmitExpression(t2.value)+'* + load ';
+                        var g = variable.global;
+                        if(g){
+                            return g.memoryLocation+' 4 '+EmitExpression(t2.value)+'* + '+g._type+'_load ';
                         }
                         else{
                             throw "Expecting [] on globals only";
@@ -168,7 +169,7 @@ function C(root){
                     if(variable.global){
                         forthCode+=variable.global.memoryLocation+' ';
                         forthCode+=EmitExpression(statement.value);
-                        forthCode+='store ';
+                        forthCode+=variable.global._type+'_store ';
                     }
                     else if(variable.local){
                         forthCode+=EmitExpression(statement.value);
@@ -183,7 +184,7 @@ function C(root){
                     if(variable.global){
                         forthCode+=variable.global.memoryLocation+' 4 '+EmitExpression(statement.element)+'* + ';
                         forthCode+=EmitExpression(statement.value);
-                        forthCode+='store ';
+                        forthCode+=variable.global._type+'_store ';
                     }
                     else{
                         throw "Assign array. Expecting global: "+JSON.stringify(variable);;
@@ -247,7 +248,7 @@ function C(root){
                 }
                 return parseFloat(c.value);
             }
-            else if(tokens[0].type == 'Number'){
+            else if(tokens[0].type == 'Float' || tokens[0].type == 'Int'){
                 return parseFloat(tokens[0].value);
             }
         }

@@ -19,11 +19,26 @@ function Tokenize(code){
     function Number(){
         var start = index;
         index++;
+        var dot = false;
         while(true){
-            if(!(IsDigit(code[index]) || code[index]=='.')){
-                return Token('Number', start, index);
+            if(IsDigit(code[index])){
+                index++;
             }
-            index++;
+            else if(code[index] == '.'){
+                if(dot){
+                    throw "Number already has .";
+                }
+                dot = true;
+                index++;
+            }
+            else{
+                if(dot){
+                    return Token('Float', start, index);
+                }
+                else{
+                    return Token('Int', start, index);
+                }
+            }
         }
     }
 
@@ -61,7 +76,7 @@ function Tokenize(code){
         }
     }
 
-    const punctuation2 = ['=='];
+    const punctuation2 = ['==', '&&', '||'];
     var tokens = [];
     code = code+'\0';
     var index = 0;

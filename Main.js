@@ -15,16 +15,18 @@ var forth = C([
     ImportFunc('void', 'RequestKeyDown', [], 'addEventListener("keydown", k=>exports.KeyDown(k.keyCode));'),
     ImportFunc('void', 'RequestKeyUp', [], 'addEventListener("keyup", k=>exports.KeyUp(k.keyCode));'),
     ImportFunc('int', 'Random', ['int min', 'int max'], 'return Math.random()*(max-min)+min;'),
-    ImportFunc('void', 'Print', ['int i'], 'console.log(i);'),
+    ImportFunc('void', 'PrintInt', ['int i'], 'console.log(i);'),
+    ImportFunc('void', 'PrintFloat', ['float f'], 'console.log(f);'),
+
 
     CConst('ROCK_COUNT', '20'),
     CConst('SCREEN_WIDTH', '600'),
     CConst('SCREEN_HEIGHT', '500'),
-    CGlobal('rockX', 'ROCK_COUNT'),
-    CGlobal('rockY', 'ROCK_COUNT'),
-    CGlobal('leftArrow'),
-    CGlobal('rightArrow'),
-    CGlobal('playerX'),
+    CGlobal('int', 'rockX', 'ROCK_COUNT'),
+    CGlobal('int', 'rockY', 'ROCK_COUNT'),
+    CGlobal('int', 'leftArrow'),
+    CGlobal('int', 'rightArrow'),
+    CGlobal('int', 'playerX'),
     CConst('playerY', '400'),
 
     CFunc('export', 'void', 'KeyDown', ['int k'], [
@@ -64,6 +66,7 @@ var forth = C([
         'RequestAnimationFrame()',
     ]),
     CFunc('entry', 'void', 'Main', [], [
+        'PrintFloat(SCREEN_WIDTH)',
         CAssign('playerX', 'SCREEN_WIDTH / 2'),
         CFor('i', 'ROCK_COUNT', [
             CAssignArray('rockX', 'i', 'Random(0, SCREEN_WIDTH)'),
@@ -75,5 +78,6 @@ var forth = C([
         'Draw()',
     ]),
 ]);
+
 var wasm = Forth(forth);
 Wasm(wasm);

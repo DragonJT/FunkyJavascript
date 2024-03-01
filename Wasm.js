@@ -1,6 +1,6 @@
 /*Wasm([
-    ImportFunc('void', 'Print', ['int i'], 'console.log(i);'),
-    WasmFunc('entry', 'void', 'Main', [], ['int x'], [
+    ImportFunc('void', 'Print', ['i32 i'], 'console.log(i);'),
+    WasmFunc('entry', 'void', 'Main', [], ['i32 x'], [
         Instruction('i32_const', 3), 
         Instruction('set_local', 'x'), 
         Instruction('get_local', 'x'), 
@@ -237,13 +237,11 @@ function Wasm(allFunctions){
     
     function EmitTypeSection(){
         function GetValtype(type){
-            if(type == 'int'){
-                return Valtype.i32;
+            var valtype = Valtype[type];
+            if(!valtype){
+                throw "Unexpected type: "+type;
             }
-            else if(type == 'float'){
-                return Valtype.f32;
-            }
-            throw "Unexpected type: "+type;
+            return valtype;
         }
 
         function GetReturnValtype(type){
@@ -293,28 +291,42 @@ function Wasm(allFunctions){
     
     function EmitCodeSection(){
         function GetBlocktype(type){
-            if(type == 'void'){
-                return Blocktype.void;
+            var blocktype = Blocktype[type];
+            if(!blocktype){
+                throw 'Cant find blocktype';
             }
-            else if(type == 'int'){
-                return Blocktype.i32;
-            }
-            throw "Unexpected type: "+type;
+            return blocktype;
         }
 
         function EmitFunctionWasm(f){
             var localID = 0;
             var i32LocalCount = 0;
+            var f32LocalCount = 0;
             for(var p of f.parametersObjs){
                 p.id = localID;
                 localID++;
             }
             for(var l of f.localsObjs){
-                if(l.type == 'int'){
+                if(l.type == 'i32'){
                     l.id = localID;
                     localID++;
                     i32LocalCount++;
                 }
+            }
+            for(var l of f.localsObjs){
+                if(l.type == 'f32'){
+                    l.id = localID;
+                    localID++;
+                    f32LocalCount++;
+                }
+            }
+
+            var localBytes = [];
+            if(i32LocalCount > 0){
+                localBytes.push(encodeLocal(i32LocalCount, Valtype.i32));
+            }
+            if(f32LocalCount > 0){
+                localBytes.push(encodeLocal(f32LocalCount, Valtype.f32));
             }
 
             function FindFunction(name){
@@ -349,6 +361,9 @@ function Wasm(allFunctions){
             for(var i of f.instructions){
                 if(i.opcode == 'i32_const'){
                     wasmCode.push(Opcode.i32_const, ...signedLEB128(i.value));
+                }
+                else if(i.opcode == 'f32_const'){
+                    wasmCode.push(Opcode.f32_const, ...ieee754(i.value));
                 }
                 else if(i.opcode == 'call'){
                     wasmCode.push(Opcode.call, ...unsignedLEB128(FindFunction(i.value).id));
@@ -389,9 +404,8 @@ function Wasm(allFunctions){
                 }
             }
             wasmCode.push(Opcode.end);
-            return encodeVector([1, ...encodeLocal(i32LocalCount, Valtype.i32), ...wasmCode]);
+            return encodeVector([...encodeVector(localBytes), ...wasmCode]);
         }
-
         return createSection(Section.code, encodeVector(functions.map(f=>EmitFunctionWasm(f))));
     }
 
@@ -412,7 +426,7 @@ function Wasm(allFunctions){
         code+="return importObject;\n";
         return new Function('exports', code)(exports);
     }
-    
+        
     const wasmBytes = Uint8Array.from([
         ...magicModuleHeader,
         ...moduleVersion,
