@@ -17,6 +17,7 @@ var forth = C([
     ImportFunc('int', 'Random', ['int min', 'int max'], 'return Math.random()*(max-min)+min;'),
     ImportFunc('void', 'PrintInt', ['int i'], 'console.log(i);'),
     ImportFunc('void', 'PrintFloat', ['float f'], 'console.log(f);'),
+    ImportFunc('int', 'abs', ['int i'], 'return Math.abs(i);'),
 
 
     CConst('ROCK_COUNT', '20'),
@@ -26,7 +27,8 @@ var forth = C([
     CGlobal('int', 'rockY', 'ROCK_COUNT'),
     CGlobal('int', 'leftArrow'),
     CGlobal('int', 'rightArrow'),
-    CGlobal('float', 'playerX'),
+    CGlobal('int', 'playerX'),
+    CGlobal('int', 'health'),
     CConst('playerY', '400'),
 
     CFunc('export', 'void', 'KeyDown', ['int k'], [
@@ -48,28 +50,29 @@ var forth = C([
     CFunc('export', 'void', 'Draw', [], [
         'FillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0)',
         CFor('i', 'ROCK_COUNT', [
+            CIf('abs(playerX - rockX[i]) < 40 && abs(playerY - rockY[i]) < 40', [
+                CAssign('health', 'health - 1'),
+            ]),
             'FillRect(rockX[i]-15, rockY[i]-15, 30, 30, 0, 150, 255)',
             CAssignArray('rockY', 'i', 'rockY[i] + 1'),
             CIf('rockY[i]>SCREEN_HEIGHT', [
                 CAssignArray('rockY', 'i', '0'),
                 CAssignArray('rockX', 'i', 'Random(0, SCREEN_WIDTH)'),
             ]),
-            CAssign('playerX', 'playerX + ((float)leftArrow) * 0.2 - ((float)rightArrow) * 0.2'),
-            CIf('playerX < 0', [
-                CAssign('playerX', '0'),
-            ]),
-            CIf('playerX > SCREEN_WIDTH', [
-                CAssign('playerX', 'SCREEN_WIDTH'),
-            ]),
-            CVar('r', '100'),
-            CIf('(playerX < 200) || (playerX > 400)', [
-                CAssign('r', '255'),
-            ]),
-            'FillRect((int)playerX-20, playerY-20, 40, 40, r, 150, 0)',
         ]),
+        CAssign('playerX', 'playerX + leftArrow*3 - rightArrow*3'),
+        CIf('playerX < 0', [
+            CAssign('playerX', '0'),
+        ]),
+        CIf('playerX > SCREEN_WIDTH', [
+            CAssign('playerX', 'SCREEN_WIDTH'),
+        ]),
+        'FillRect(10,10,health,20,255,0,0)',
+        'FillRect((int)playerX-20, playerY-20, 40, 40, 255, 150, 0)',
         'RequestAnimationFrame()',
     ]),
     CFunc('entry', 'void', 'Main', [], [
+        CAssign('health', '255'),
         CAssign('playerX', 'SCREEN_WIDTH / 2'),
         CFor('i', 'ROCK_COUNT', [
             CAssignArray('rockX', 'i', 'Random(0, SCREEN_WIDTH)'),
