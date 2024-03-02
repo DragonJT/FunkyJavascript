@@ -183,7 +183,6 @@ function Forth(functions){
                 this.left.Emit(instructions);
                 this.right.Emit(instructions);
                 var op = ops[this.token.value];
-                
                 instructions.push({opcode:'f32_'+op.name});
             }
             else{
@@ -247,6 +246,9 @@ function Forth(functions){
 
         Emit(instructions){
             if(this.typeInferer.Has(BOOL)){
+                this.left.Emit(instructions);
+                this.right.Emit(instructions);
+                var op = ops[this.token.value];
                 instructions.push({opcode:'i32_'+op.name});
             }
             else{

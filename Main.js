@@ -61,7 +61,11 @@ var forth = C([
             CIf('playerX > SCREEN_WIDTH', [
                 CAssign('playerX', 'SCREEN_WIDTH'),
             ]),
-            'FillRect((int)playerX-20, playerY-20, 40, 40, 255, 150, 0)',
+            CVar('r', '100'),
+            CIf('(playerX < 200) || (playerX > 400)', [
+                CAssign('r', '255'),
+            ]),
+            'FillRect((int)playerX-20, playerY-20, 40, 40, r, 150, 0)',
         ]),
         'RequestAnimationFrame()',
     ]),
