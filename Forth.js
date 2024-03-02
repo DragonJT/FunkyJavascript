@@ -567,7 +567,37 @@ function Forth(functions){
         }
     }
 
-    function ParseFunction(f){
+    class ReturnVoid{
+        StartSetType(){}
+        Emit(instructions){
+            instructions.push({opcode:'return'});
+        }
+    }
+
+    class Return{
+        constructor(expression, type){
+            this.expression = expression;
+            this.type = type;
+        }
+
+        StartSetType(){
+            this.binaryType = GetBinaryType(this.type)
+            this.typeInferer = new TypeInferer(this.binaryType);
+            this.expression.SetType(this.typeInferer);
+        }
+
+        Emit(instructions){
+            if(this.typeInferer.Has(this.binaryType)){
+                this.expression.Emit(instructions);
+                instructions.push({opcode:'return'});
+            }
+            else{
+                throw 'returning wrong type';
+            }
+        }
+    }
+
+    function ParseFunction(f, _export){
         
         function Treeify(tokens, depth){
             var body = [];
@@ -607,6 +637,15 @@ function Forth(functions){
                 }
                 else if(t.type == 'Varname'){
                     var t1 = t.value;
+                    if(t1 == 'return'){
+                        if(f.returnType == 'void'){
+                            body.push(new ReturnVoid());
+                        }
+                        else{
+                            body.push(new Return(stack.pop(), f.returnType));
+                        }
+                        continue;
+                    }
                     if(t1 == 'block'){
                         body.push(new Block(Treeify(tokens, depth+1)));
                         continue;
@@ -756,7 +795,7 @@ function Forth(functions){
             var parameters = f.parameters.map(p=>ParseVariable(p)).map(p=>GetWasmType(p.type)+' '+p.name);
             wasm.push(ImportFunc(GetWasmType(f.returnType), f.name, parameters, f.code));
         }
-        else if(f.type == 'export' || f.type == 'func' || f.type == 'entry'){
+        else if(f.type == 'export' || f.type == 'func' || f.type == 'entry' || f.type == 'test'){
             wasm.push(ParseFunction(f));
         }
         else{

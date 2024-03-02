@@ -71,19 +71,23 @@ var forth = C([
         'FillRect((int)playerX-20, playerY-20, 40, 40, 255, 150, 0)',
         'RequestAnimationFrame()',
     ]),
-    CFunc('entry', 'void', 'Main', [], [
+    CFunc('entry', 'int', 'Main', ['int a', 'int b'], [
         CAssign('health', '255'),
         CAssign('playerX', 'SCREEN_WIDTH / 2'),
         CFor('i', 'ROCK_COUNT', [
             CAssignArray('rockX', 'i', 'Random(0, SCREEN_WIDTH)'),
             CAssignArray('rockY', 'i', 'Random(0, SCREEN_HEIGHT)'),
         ]),
-        'CreateCanvas(600,500)',
+        'CreateCanvas(SCREEN_WIDTH,SCREEN_HEIGHT)',
         'RequestKeyDown()',
         'RequestKeyUp()',
         'Draw()',
+        CReturn('a / b'),
     ]),
+    CTest([
+        'PrintInt(5)',
+    ])
 ]);
 
 var wasm = Forth(forth);
-Wasm(wasm);
+Wasm(wasm, 4, 2);

@@ -26,7 +26,7 @@ function ImportFunc(returnType, name, parameters, code){
     return {type:'import', returnType, name, parameters, code};
 }
 
-function Wasm(allFunctions){
+function Wasm(allFunctions, ...params){
     // https://pengowray.github.io/wasm-ops/
     const Opcode = {
         block: 0x02,
@@ -88,6 +88,7 @@ function Wasm(allFunctions){
 
     var importFunctions = [];
     var functions = [];
+    var testFunctions = [];
     var main;
 
     for(var f of allFunctions){
@@ -96,7 +97,7 @@ function Wasm(allFunctions){
         }
         else if(f.type == 'entry'){
             f.export = true;
-            main = f.name;
+            main = f;
             functions.push(f);
         }
         else if(f.type == 'export'){
@@ -106,9 +107,17 @@ function Wasm(allFunctions){
         else if(f.type == 'func'){
             functions.push(f);
         }
+        else if(f.type == 'test'){
+            f.export = true;
+            functions.push(f);
+            testFunctions.push(f);
+        }
         else{
             throw 'Unexpected function type: '+JSON.stringify(f);
         }
+    }
+    if(!main){
+        throw 'Expecting entry function';
     }
 
     for(var f of functions){
@@ -452,7 +461,15 @@ function Wasm(allFunctions){
             for(var f of functions.filter(f=>f.export)){
                 exports[f.name] = obj.instance.exports[f.name];
             }
-            exports[main]();
+            for(var f of testFunctions){
+                exports[f.name]();
+            }
+            if(main.returnType == 'void'){
+                exports[main.name](...params);
+            }
+            else{
+                console.log(exports[main.name](...params));
+            }
         }
     );
 }

@@ -38,6 +38,14 @@ function CConst(name, value){
     return {type:'const', name, value};
 }
 
+function CReturn(expression){
+    return {type:'return', expression};
+}
+
+function CTest(body){
+    return {type:'test', body};
+}
+
 function C(root){
     function EmitFunction(f){
 
@@ -166,6 +174,22 @@ function C(root){
                 if(typeof statement == 'string'){
                     forthCode+=EmitExpression(statement);
                 }
+                else if(statement.type == 'return'){
+                    if(f.returnType == 'void'){
+                        if(statement.expression){
+                            throw 'Return: returns value from void function: '+JSON.stringify(statement);;
+                        }
+                    }
+                    else{
+                        if(statement.expression){
+                            forthCode+=EmitExpression(statement.expression);
+                        }
+                        else{
+                            throw 'Return: Expecting expression from return: '+JSON.stringify(statement);
+                        }
+                    }
+                    forthCode+='return ';
+                }
                 else if(statement.type == 'var'){
                     if(GetLocal(statement.name)){
                         throw "Local already exists in function.";
@@ -273,6 +297,7 @@ function C(root){
         }
     }
 
+    var testID = 0;
     for(var i of root){
         if(i.type == 'import'){
             forth.push(i);
@@ -281,6 +306,10 @@ function C(root){
             forth.push(EmitFunction(i));
         }
         else if(i.type == 'global' || i.type == 'const'){}
+        else if(i.type == 'test'){
+            forth.push(EmitFunction(CFunc('test', 'void', '__TestFunc___'+testID, [], i.body)));
+            testID++;
+        }
         else{
             throw 'Unexpected type: '+JSON.stringify(i);
         }
