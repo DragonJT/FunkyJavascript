@@ -26,7 +26,7 @@ var forth = C([
     CGlobal('int', 'rockY', 'ROCK_COUNT'),
     CGlobal('int', 'leftArrow'),
     CGlobal('int', 'rightArrow'),
-    CGlobal('int', 'playerX'),
+    CGlobal('float', 'playerX'),
     CConst('playerY', '400'),
 
     CFunc('export', 'void', 'KeyDown', ['int k'], [
@@ -54,19 +54,18 @@ var forth = C([
                 CAssignArray('rockY', 'i', '0'),
                 CAssignArray('rockX', 'i', 'Random(0, SCREEN_WIDTH)'),
             ]),
-            CAssign('playerX', 'playerX + leftArrow - rightArrow'),
+            CAssign('playerX', 'playerX + ((float)leftArrow) * 0.2 - ((float)rightArrow) * 0.2'),
             CIf('playerX < 0', [
                 CAssign('playerX', '0'),
             ]),
             CIf('playerX > SCREEN_WIDTH', [
                 CAssign('playerX', 'SCREEN_WIDTH'),
             ]),
-            'FillRect(playerX-20, playerY-20, 40, 40, 255, 150, 0)',
+            'FillRect((int)playerX-20, playerY-20, 40, 40, 255, 150, 0)',
         ]),
         'RequestAnimationFrame()',
     ]),
     CFunc('entry', 'void', 'Main', [], [
-        'PrintFloat(SCREEN_WIDTH)',
         CAssign('playerX', 'SCREEN_WIDTH / 2'),
         CFor('i', 'ROCK_COUNT', [
             CAssignArray('rockX', 'i', 'Random(0, SCREEN_WIDTH)'),

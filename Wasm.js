@@ -395,6 +395,12 @@ function Wasm(allFunctions){
                 else if(i.opcode == 'i32_load'){
                     wasmCode.push(Opcode.i32_load, 0, 0);
                 }
+                else if(i.opcode == 'f32_store'){
+                    wasmCode.push(Opcode.f32_store, 0, 0);
+                }
+                else if(i.opcode == 'f32_load'){
+                    wasmCode.push(Opcode.f32_load, 0, 0);
+                }
                 else{
                     var opcodeValue = Opcode[i.opcode];
                     if(opcodeValue == undefined){

@@ -117,6 +117,9 @@ function C(root){
                     else if(t.type == 'Float' || t.type == 'Int'){
                         return t.value+' ';
                     }
+                    else if(t.type == 'Parenthesis'){
+                        return EmitExpression(t.value);
+                    }
                     else{
                         throw "Unexpected remaining token: "+JSON.stringify(t);
                     }
@@ -124,6 +127,13 @@ function C(root){
                 else if(tokens.length == 2){
                     var t1 = tokens[0];
                     var t2 = tokens[1];
+                    if(t1.type == 'Parenthesis'){
+                        var castTo = t1.value;
+                        if(castTo == 'int' || castTo == 'float' || castTo == 'bool'){
+                            return EmitExpression(t2.value)+' cast '+castTo+' ';
+                        }
+                        throw 'Can only cast to int, float, bool';
+                    }
                     if(t1.type == 'Varname' && t2.type == 'Parenthesis'){
                         return EmitArgs(t2.value) + t1.value+' ';
                     }

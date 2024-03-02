@@ -508,6 +508,63 @@ function Forth(functions){
         }
     }
 
+    class Cast{
+        constructor(castTo, value){
+            this.castTo = castTo;
+            this.value = value;
+        }
+
+        SetType(returnTypeInferer){
+            this.returnTypeInferer = returnTypeInferer;
+            this.castToBinaryType = GetBinaryType(this.castTo);
+            returnTypeInferer.Update(this.castToBinaryType);
+            this.typeInferer = new TypeInferer(INT|FLOAT|BOOL);
+            this.value.SetType(this.typeInferer);
+        }
+
+        Emit(instructions){
+            this.value.Emit(instructions);
+            if(this.returnTypeInferer.Has(INT)){
+                if(this.typeInferer.Has(INT)){}
+                else if(this.typeInferer.Has(BOOL)){}
+                else if(this.typeInferer.Has(FLOAT)){
+                    instructions.push({opcode:'i32_trunc_f32_s'});
+                }
+                else{
+                    throw "Cannot cast from - to: "+JSON.stringify(this.typeInferer)+" - "+this.castTo;
+                }
+            }
+            else if(this.returnTypeInferer.Has(FLOAT)){
+                if(this.typeInferer.Has(FLOAT)){}
+                else if(this.typeInferer.Has(INT)){
+                    instructions.push({opcode:'f32_convert_i32_s'})
+
+                }
+                else if(this.typeInferer.Has(BOOL)){
+                    instructions.push({opcode:'f32_convert_i32_s'});
+                }
+                else{
+                    throw "Cannot cast from - to: "+JSON.stringify(this.typeInferer)+" - "+this.castTo;
+                }
+            }
+            else if(this.returnTypeInferer.Has(BOOL)){
+                if(this.typeInferer.Has(BOOL)){}
+                else if(this.typeInferer.Has(INT)){
+                    instructions.push({opcode:'i32_eqz'}, {opcode:'i32_eqz'});
+                }
+                else if(this.typeInferer.Has(FLOAT)){
+                    instructions.push({opcode:'f32_convert_i32_s'}, {opcode:'i32_eqz'}, {opcode:'i32_eqz'})
+                }
+                else{
+                    throw "Cannot cast from - to: "+JSON.stringify(this.typeInferer)+" - "+this.castTo;
+                }
+            }
+            else{
+                throw "Cannot cast to: "+this.castTo;
+            }
+        }
+    }
+
     function ParseFunction(f){
         
         function Treeify(tokens, depth){
@@ -593,6 +650,12 @@ function Forth(functions){
                             return body;
                         }
                         throw 'Expecting stack to be length 0 at end of block';
+                    }
+                    if(t1 == 'cast'){
+                        var t2 = tokens[i].value;
+                        i++;
+                        stack.push(new Cast(t2, stack.pop()));
+                        continue;
                     }
                     if(t1 == 'set'){
                         var t2 = tokens[i].value;
